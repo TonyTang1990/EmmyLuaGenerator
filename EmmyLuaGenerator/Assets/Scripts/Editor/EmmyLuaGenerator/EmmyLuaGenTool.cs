@@ -387,7 +387,7 @@ namespace EmmyLua
             {
                 return string.Empty;
             }
-            var typeDefinitionName = GetTypeEmmyLuaFileName(type);
+            var typeDefinitionName = GetEmmyLuaTypeDefinitionName(type);
             var typeEmmyLuaFileName = typeDefinitionName.Replace('.', '_');
             return $"{typeEmmyLuaFileName}_{EmmyLuaFileNamePostFix}.lua";
         }
@@ -407,9 +407,9 @@ namespace EmmyLua
             var typeName = type.Name;
             var emmyLuaTypeDefinition = GetEmmyLuaTypeDeclareDefinition(type);
             EmmyLuaContentStringBuilder.Append(emmyLuaTypeDefinition);
-            var emmyLuaMemberDefinition = GetEmmyLuaMemberDefiniton(type);
+            var emmyLuaMemberDefinition = GetEmmyLuaTypeMemberDefinition(type);
             EmmyLuaContentStringBuilder.Append(emmyLuaMemberDefinition);
-            var emmyLuaMethodDefinition = GetEmmyLuaMethodDefiniton(type);
+            var emmyLuaMethodDefinition = GetEmmyLuaTypeMethodDefinition(type);
             EmmyLuaContentStringBuilder.Append(emmyLuaMethodDefinition);
             EmmyLuaContentStringBuilder.Append($"return {typeName}");
             return EmmyLuaContentStringBuilder.ToString();
@@ -426,7 +426,7 @@ namespace EmmyLua
             {
                 return string.Empty;
             }
-            var typeDefinitionName = GetXLuaEmmyLuaTypeDefinitionName(type); ;
+            var typeDefinitionName = GetEmmyLuaTypeDefinitionName(type); ;
             return $"{CSTypePrefix}.{typeDefinitionName}";
         }
 
@@ -591,6 +591,7 @@ namespace EmmyLua
             {
                 result = AppendNewLineContent(result, $"---@class {emmyLuaTypeName}");
             }
+            result = AppendNewLineContent(result, $"local {type.Name} = {{}}");
             return result;
         }
 
@@ -653,7 +654,7 @@ namespace EmmyLua
                 {
                     Debug.Log($"publicStaticPropertyInfo.Name:{publicStaticPropertyInfo.Name}");
                     var propertyName = publicStaticPropertyInfo.Name;
-                    var propertyType = publicStaticPropertyInfo.FieldType;
+                    var propertyType = publicStaticPropertyInfo.PropertyType;
                     var propertyTypeName = GetEmmyLuaTypeName(propertyType);
                     result = AppendNewLineContent(result, $"---@field public {propertyName} {propertyTypeName} @");
                 }
@@ -758,7 +759,7 @@ namespace EmmyLua
                 result = AppendNewLineContent(result, $"---@return {returnTypeName} @");
             }
             var methodName = methodInfo.Name;
-            var methodSeparater = methodInfo.IsStatic ? "." : ";";
+            var methodSeparater = methodInfo.IsStatic ? "." : ":";
             result = AppendNewLineContent(result, $"function {typeName}{methodSeparater}{methodName}({parameterContent}) end");
             return result;
         }

@@ -8,9 +8,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <RootNamespace>
-    </RootNamespace>
-    <ProjectGuid>{3BE9E027-FC97-90B2-0119-306AF981AAFE}</ProjectGuid>
+    <RootNamespace></RootNamespace>
+    <ProjectGuid>{058D6D88-750F-EEA4-942F-1864C27526A0}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp-Editor</AssemblyName>
@@ -58,11 +57,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Editor\AssetProcesserHook\ScriptAutoProcess\ScriptKeywordProcesser.cs" />
-    <Compile Include="Assets\Scripts\Editor\EmmyLuaGenerator\EditorUtilities.cs" />
-    <Compile Include="Assets\Scripts\Editor\EmmyLuaGenerator\EmmyLuaGenConfig.cs" />
     <Compile Include="Assets\Scripts\Editor\EmmyLuaGenerator\EmmyLuaGenTool.cs" />
+    <Compile Include="Assets\Scripts\Editor\EditorUtilities.cs" />
     <Compile Include="Assets\Scripts\Editor\EmmyLuaGenerator\EmmyLuaGenWindow.cs" />
-    <Compile Include="Assets\Scripts\Editor\EmmyLuaGenerator\PathUtilities.cs" />
+    <Compile Include="Assets\Scripts\Editor\EmmyLuaGenerator\EmmyLuaGenConfig.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
@@ -716,11 +714,10 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Assembly-CSharp.csproj">
-      <Project>{3283B91C-CD54-4ED0-B3CB-3CC138E87F02}</Project>
+      <Project>{BD8BB4D9-F699-E170-2F7A-499149A58C05}</Project>
       <Name>Assembly-CSharp</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.

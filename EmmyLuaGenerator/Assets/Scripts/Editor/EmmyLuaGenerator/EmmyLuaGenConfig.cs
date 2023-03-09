@@ -189,7 +189,7 @@ namespace EmmyLua
             var namespaceCodeData = namespaceExportData.ConfigData.CodeData;
             if(!string.Equals(assembleCodeData.AssembleName, namespaceCodeData.AssembleName))
             {
-                Debug.LogError($"添加的Assemble:{namespaceExportData.AssembleName} Namespace:{namespaceCodeData.Namespace}不属于Assemble:{assembleCodeData.AssembleName}，添加命名空间数据失败！");
+                Debug.LogError($"添加的Assemble:{namespaceCodeData.AssembleName} Namespace:{namespaceCodeData.NamespaceName}不属于Assemble:{assembleCodeData.AssembleName}，添加命名空间数据失败！");
                 return false;
             }
 
@@ -363,36 +363,36 @@ namespace EmmyLua
         /// Unity代码注释输出相对目录
         /// </summary>
         [Header("Unity代码注释输出相对目录")]
-        public string UnityOuputFolderRelativePath = "Scripts/Editor/EmmyLuaGenerator/UnityLuaAPI";
+        public string UnityOuputFolderRelativePath = "Assets/Scripts/Editor/EmmyLuaGenerator/UnityLuaAPI/";
 
         /// <summary>
         /// DotNet代码注释输出相对目录
         /// </summary>
         [Header("DotNet代码注释输出相对目录")]
-        public string DotNetOuputFolderRelativePath = "Scripts/Editor/EmmyLuaGenerator/DotNetLuaAPI";
+        public string DotNetOuputFolderRelativePath = "Assets/Scripts/Editor/EmmyLuaGenerator/DotNetLuaAPI/";
 
         /// <summary>
         /// 项目代码注释输出相对目录
         /// </summary>
         [Header("项目代码注释输出相对目录")]
-        public string ProjectOuputFolderRelativePath = "Scripts/Editor/EmmyLuaGenerator/ProjectLuaAPI";
+        public string ProjectOuputFolderRelativePath = "Assets/Scripts/Editor/EmmyLuaGenerator/ProjectLuaAPI/";
 
         /// <summary>
         /// FGUI代码注释输出相对目录
         /// </summary>
         [Header("FGUI代码注释输出相对目录")]
-        public string FGUIOuputFolderRelativePath = "Scripts/Editor/EmmyLuaGenerator/FGUILuaAPI";
+        public string FGUIOuputFolderRelativePath = "Assets/Scripts/Editor/EmmyLuaGenerator/FGUILuaAPI/";
 
         /// <summary>
         /// 第三方代码注释输出相对目录
         /// </summary>
         [Header("第三方代码注释输出相对目录")]
-        public string ThirdPartyOuputFolderRelativePath = "Scripts/Editor/EmmyLuaGenerator/ThirdPartyLuaAPI";
+        public string ThirdPartyOuputFolderRelativePath = "Assets/Scripts/Editor/EmmyLuaGenerator/ThirdPartyLuaAPI/";
 
         /// <summary>
         /// Assemble导出数据列表
         /// </summary>
-        [Header("Assemble导出数据列表"]
+        [Header("Assemble导出数据列表")]
         public List<AssembleExportData> AllAssembleExportDataList = new List<AssembleExportData>();
 
         /// <summary>

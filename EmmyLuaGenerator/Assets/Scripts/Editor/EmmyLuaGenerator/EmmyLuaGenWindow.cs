@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using UnityEditor;
@@ -158,7 +159,7 @@ namespace EmmyLua
             InitCSharpExportData();
             DeleteInvalideTypeDatas();
             UpdateTotalNumberDatas();
-            GD.Collect();
+            GC.Collect();
         }
 
         /// <summary>
@@ -170,9 +171,20 @@ namespace EmmyLua
             if(mEmmyLuaGenConfig == null)
             {
                 mEmmyLuaGenConfig = ScriptableObject.CreateInstance<EmmyLuaGenConfig>();
+                MakeSureConfigAssetFolderExist();
                 AssetDatabase.CreateAsset(mEmmyLuaGenConfig, EmmyLuaGenConfigAssetPath);
                 AssetDatabase.SaveAssets();
             }
+        }
+
+        /// <summary>
+        /// 确保EmmyLua生成配置Asset所在目录存在
+        /// </summary>
+        private void MakeSureConfigAssetFolderExist()
+        {
+            var genConfigAssetFullPath = PathUtilities.GetAssetFullPath(EmmyLuaGenConfigAssetPath);
+            var genConfigAssetFolderFullPath = Path.GetDirectoryName(genConfigAssetFullPath);
+            FolderUtilities.CheckAndCreateSpecificFolder(genConfigAssetFolderFullPath);
         }
 
         /// <summary>
@@ -263,7 +275,7 @@ namespace EmmyLua
                         {
                             genCodeProgress++;
                             var codeData = classExportData.CodeData;
-                            var isExportClass = isExportClass(codeData.AssembleName, codeData.NamespaceName, codeData.ClassFullName);
+                            var isExportClass = IsExportClass(codeData.AssembleName, codeData.NamespaceName, codeData.ClassFullName);
                             if(!isExportClass)
                             {
                                 continue;
@@ -281,7 +293,7 @@ namespace EmmyLua
             }
             Debug.Log($"总共生成类型数量:{generateCodeTypeNum}");
             timeCounter.Stop();
-            Debug.Log($"EmmyLua代码生成总耗时:{timeCounter.ElapseMilliseconds}ms");
+            Debug.Log($"EmmyLua代码生成总耗时:{timeCounter.ElapsedMilliseconds}ms");
             EditorUtility.ClearProgressBar();
             Debug.Log($"EmmyLua注释代码生成完毕！");
         }
@@ -465,7 +477,7 @@ namespace EmmyLua
         /// </summary>
         private void UpdateTotalNumberDatas()
         {
-            mTotalAssembleNumber = mEmmyLuaGenConfig.AllAssembleExportDataList.Count();
+            mTotalAssembleNumber = mEmmyLuaGenConfig.AllAssembleExportDataList.Count;
             mTotalNamespaceNumber = 0;
             mTotalClassNumber = 0;
             foreach(var assembleData in mEmmyLuaGenConfig.AllAssembleExportDataList)
@@ -920,58 +932,61 @@ namespace EmmyLua
         private void DrawEmmyLuaGenConfigArea()
         {
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LableField("Unity代码注释输出目录：", GUILayout.Width(150f));
+            EditorGUILayout.LabelField("Unity代码注释输出目录：", GUILayout.Width(150f));
             EditorGUILayout.TextField(mEmmyLuaGenConfig.UnityOuputFolderRelativePath, GUILayout.ExpandWidth(true));
             if(GUILayout.Button("选择目录", GUILayout.Width(100f)))
             {
-                mEmmyLuaGenConfig.UnityOuputFolderRelativePath = EditorUtilities.ChosenProjectFolder(mEmmyLuaGenConfig.UnityOuputFolderRelativePath);
+                mEmmyLuaGenConfig.UnityOuputFolderRelativePath = EditorUtilities.ChoosenProjectFolder(mEmmyLuaGenConfig.UnityOuputFolderRelativePath);
             }
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LableField("DotNet代码注释输出目录：", GUILayout.Width(150f));
+            EditorGUILayout.LabelField("DotNet代码注释输出目录：", GUILayout.Width(150f));
             EditorGUILayout.TextField(mEmmyLuaGenConfig.DotNetOuputFolderRelativePath, GUILayout.ExpandWidth(true));
             if (GUILayout.Button("选择目录", GUILayout.Width(100f)))
             {
-                mEmmyLuaGenConfig.DotNetOuputFolderRelativePath = EditorUtilities.ChosenProjectFolder(mEmmyLuaGenConfig.DotNetOuputFolderRelativePath);
+                mEmmyLuaGenConfig.DotNetOuputFolderRelativePath = EditorUtilities.ChoosenProjectFolder(mEmmyLuaGenConfig.DotNetOuputFolderRelativePath);
             }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LableField("项目代码注释输出目录：", GUILayout.Width(150f));
+            EditorGUILayout.LabelField("项目代码注释输出目录：", GUILayout.Width(150f));
             EditorGUILayout.TextField(mEmmyLuaGenConfig.ProjectOuputFolderRelativePath, GUILayout.ExpandWidth(true));
             if (GUILayout.Button("选择目录", GUILayout.Width(100f)))
             {
-                mEmmyLuaGenConfig.ProjectOuputFolderRelativePath = EditorUtilities.ChosenProjectFolder(mEmmyLuaGenConfig.ProjectOuputFolderRelativePath);
+                mEmmyLuaGenConfig.ProjectOuputFolderRelativePath = EditorUtilities.ChoosenProjectFolder(mEmmyLuaGenConfig.ProjectOuputFolderRelativePath);
             }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LableField("FGUI代码注释输出目录：", GUILayout.Width(150f));
+            EditorGUILayout.LabelField("FGUI代码注释输出目录：", GUILayout.Width(150f));
             EditorGUILayout.TextField(mEmmyLuaGenConfig.FGUIOuputFolderRelativePath, GUILayout.ExpandWidth(true));
             if (GUILayout.Button("选择目录", GUILayout.Width(100f)))
             {
-                mEmmyLuaGenConfig.FGUIOuputFolderRelativePath = EditorUtilities.ChosenProjectFolder(mEmmyLuaGenConfig.FGUIOuputFolderRelativePath);
+                mEmmyLuaGenConfig.FGUIOuputFolderRelativePath = EditorUtilities.ChoosenProjectFolder(mEmmyLuaGenConfig.FGUIOuputFolderRelativePath);
             }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LableField("第三方代码注释输出目录：", GUILayout.Width(150f));
+            EditorGUILayout.LabelField("第三方代码注释输出目录：", GUILayout.Width(150f));
             EditorGUILayout.TextField(mEmmyLuaGenConfig.ThirdPartyOuputFolderRelativePath, GUILayout.ExpandWidth(true));
             if (GUILayout.Button("选择目录", GUILayout.Width(100f)))
             {
-                mEmmyLuaGenConfig.ThirdPartyOuputFolderRelativePath = EditorUtilities.ChosenProjectFolder(mEmmyLuaGenConfig.ThirdPartyOuputFolderRelativePath);
+                mEmmyLuaGenConfig.ThirdPartyOuputFolderRelativePath = EditorUtilities.ChoosenProjectFolder(mEmmyLuaGenConfig.ThirdPartyOuputFolderRelativePath);
             }
             EditorGUILayout.EndHorizontal();
+
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LableField("是否递归设置导出勾选(反之只勾选当前)：", GUILayout.Width(250f));
-            IsTickExportRecursive = EditorGUILaout.Toggle(IsTickExportRecursive, GUILayout.Width(40f));
+            EditorGUILayout.LabelField("是否递归设置导出勾选(反之只勾选当前)：", GUILayout.Width(250f));
+            IsTickExportRecursive = EditorGUILayout.Toggle(IsTickExportRecursive, GUILayout.Width(40f));
             EditorGUILayout.EndHorizontal();
+
             EditorGUILayout.BeginHorizontal();
             if(GUILayout.Button("生成EmmyLua注释代码", GUILayout.ExpandWidth(true)))
             {
                 ExportAllExportEmmyLua();
             }
             EditorGUILayout.EndHorizontal();
+
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("保存配置", GUILayout.ExpandWidth(true)))
             {
@@ -985,11 +1000,11 @@ namespace EmmyLua
         /// </summary>
         private void DrawBriefInfoArea()
         {
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.LableField($"最大分析存储Assemble数量:{MaxAnalyseAssembleNumber}", GUILayout.ExpandWidth(true));
-            EditorGUILayout.LableField($"Assemble总数量:{mTotalAssembleNumber} 导出总数量:{mTotalExportAssembleNumber}", GUILayout.ExpandWidth(true));
-            EditorGUILayout.LableField($"Namespace总数量:{mTotalNamespaceNumber} 导出总数量:{mTotalExportNamespaceNumber}", GUILayout.ExpandWidth(true));
-            EditorGUILayout.LableField($"Type总数量:{mTotalClassNumber} 导出总数量:{mTotalExportClassNumber}", GUILayout.ExpandWidth(true));
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField($"最大分析存储Assemble数量:{MaxAnalyseAssembleNumber}", GUILayout.ExpandWidth(true));
+            EditorGUILayout.LabelField($"Assemble总数量:{mTotalAssembleNumber} 导出总数量:{mTotalExportAssembleNumber}", GUILayout.ExpandWidth(true));
+            EditorGUILayout.LabelField($"Namespace总数量:{mTotalNamespaceNumber} 导出总数量:{mTotalExportNamespaceNumber}", GUILayout.ExpandWidth(true));
+            EditorGUILayout.LabelField($"Type总数量:{mTotalClassNumber} 导出总数量:{mTotalExportClassNumber}", GUILayout.ExpandWidth(true));
             EditorGUILayout.EndHorizontal();
         }
 
@@ -1016,9 +1031,9 @@ namespace EmmyLua
         private void DrawExportDataTitleArea()
         {
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LableField("Assemble数据", EmmyLuaGenStyles.ButtonMidStyle, GUILayout.ExpandWidth(true));
-            EditorGUILayout.LableField("导出类型", EmmyLuaGenStyles.ButtonMidStyle, GUILayout.Width(120f));
-            EditorGUILayout.LableField("黑名单操作", EmmyLuaGenStyles.ButtonMidStyle, GUILayout.Width(80f));
+            EditorGUILayout.LabelField("Assemble数据", EmmyLuaGenStyles.ButtonMidStyle, GUILayout.ExpandWidth(true));
+            EditorGUILayout.LabelField("导出类型", EmmyLuaGenStyles.ButtonMidStyle, GUILayout.Width(120f));
+            EditorGUILayout.LabelField("黑名单操作", EmmyLuaGenStyles.ButtonMidStyle, GUILayout.Width(80f));
             EditorGUILayout.EndHorizontal();
         }
 
@@ -1037,12 +1052,12 @@ namespace EmmyLua
                 {
                     var preColor = GUI.color;
                     GUI.color = Color.green;
-                    assembleExportData.IsUnfold = EditorGUILayout.FoldOut(assembleExportData.IsUnfold, assembleCodeData.AssembleName, true);
+                    assembleExportData.IsUnfold = EditorGUILayout.Foldout(assembleExportData.IsUnfold, assembleCodeData.AssembleName, true);
                     GUI.color = preColor;
                 }
                 else
                 {
-                    assembleExportData.IsUnfold = EditorGUILayout.FoldOut(assembleExportData.IsUnfold, assembleCodeData.AssembleName, true);
+                    assembleExportData.IsUnfold = EditorGUILayout.Foldout(assembleExportData.IsUnfold, assembleCodeData.AssembleName, true);
                 }
                 assembleConfigData.ExportType = (CodeExportType)EditorGUILayout.EnumPopup(assembleConfigData.ExportType, GUILayout.Width(120f));
                 if(GUILayout.Button("加入黑名单", GUILayout.Width(80f)))
@@ -1106,6 +1121,7 @@ namespace EmmyLua
         private void DrawOneNamespaceExportSetting(NamespaceExportData namespaceExportData)
         {
             EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Indentation);
             var configData = namespaceExportData.ConfigData;
             var codeData = configData.CodeData;
             EditorGUI.BeginChangeCheck();
@@ -1146,10 +1162,10 @@ namespace EmmyLua
         private void DrawAssembleBlackListArea()
         {
             EditorGUILayout.BeginVertical("box");
-            mIsAssembleBlackUnfold = EditorGUIlayout.FoldOut(mIsAssembleBlackUnfold, $"黑名单详情({mEmmyLuaGenConfig.AllAssembleBlackList.Count})");
+            mIsAssembleBlackUnfold = EditorGUILayout.Foldout(mIsAssembleBlackUnfold, $"黑名单详情({mEmmyLuaGenConfig.AllAssembleBlackList.Count})");
             if(mIsAssembleBlackUnfold)
             {
-                EditorGUILayout.LableField("Assemble黑名单列表(优化代码分析和注释生成)", EmmyLuaGenStyles.ButtonMidStyle, GUILayout.ExpandWidth(true));
+                EditorGUILayout.LabelField("Assemble黑名单列表(优化代码分析和注释生成)", EmmyLuaGenStyles.ButtonMidStyle, GUILayout.ExpandWidth(true));
                 for(int i = 0; i < mEmmyLuaGenConfig.AllAssembleBlackList.Count; i++)
                 {
                     var modValue = i % AssembleBlackColumnNumber;
