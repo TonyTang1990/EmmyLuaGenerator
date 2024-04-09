@@ -405,10 +405,8 @@ namespace EmmyLua
             }
             EmmyLuaContentStringBuilder.Clear();
             var typeName = type.Name;
-            var emmyLuaTypeDefinition = GetEmmyLuaTypeDeclareDefinition(type);
+            var emmyLuaTypeDefinition = GetEmmyLuaTypeDeclareDefinition(type, true);
             EmmyLuaContentStringBuilder.Append(emmyLuaTypeDefinition);
-            var emmyLuaMemberDefinition = GetEmmyLuaTypeMemberDefinition(type);
-            EmmyLuaContentStringBuilder.Append(emmyLuaMemberDefinition);
             var emmyLuaMethodDefinition = GetEmmyLuaTypeMethodDefinition(type);
             EmmyLuaContentStringBuilder.Append(emmyLuaMethodDefinition);
             EmmyLuaContentStringBuilder.Append($"return {typeName}");
@@ -573,8 +571,9 @@ namespace EmmyLua
         /// 获取指定类型的EmmyLua类型声明定义(e.g. ---@class *** : ***)
         /// </summary>
         /// <param name="type"></param>
+        /// <param name="withMemberDefinition"></param>
         /// <returns></returns>
-        private static string GetEmmyLuaTypeDeclareDefinition(Type type)
+        private static string GetEmmyLuaTypeDeclareDefinition(Type type, bool withMemberDefinition = true)
         {
             if(type == null)
             {
@@ -590,6 +589,11 @@ namespace EmmyLua
             else
             {
                 result = AppendNewLineContent(result, $"---@class {emmyLuaTypeName}");
+            }
+            if(withMemberDefinition)
+            {
+                var emmyLuaMemberDefinition = GetEmmyLuaTypeMemberDefinition(type);
+                result = AppendNoNewLineContent(result, emmyLuaMemberDefinition);
             }
             result = AppendNewLineContent(result, $"local {type.Name} = {{}}");
             return result;
@@ -772,6 +776,17 @@ namespace EmmyLua
         private static string AppenNewLine(string content)
         {
             return string.Concat(content, Environment.NewLine);
+        }
+
+        /// <summary>
+        /// 添加不带换行的新内容
+        /// </summary>
+        /// <param name="oldContent"></param>
+        /// <param name="newContent"></param>
+        /// <returns></returns>
+        private static string AppendNoNewLineContent(string oldContent, string newContent)
+        {
+            return string.Concat(oldContent, newContent);
         }
 
         /// <summary>
