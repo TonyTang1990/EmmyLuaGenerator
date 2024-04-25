@@ -123,6 +123,11 @@ namespace EmmyLua
         private const float Indentation = 20f;
 
         /// <summary>
+        /// 所有类型信息的扩展方法信息列表Map
+        /// </summary>
+        private Dictionary<Type, List<MethodInfo>> mAllTypeExtensionMethodInfosMap = new Dictionary<Type, List<MethodInfo>>();
+
+        /// <summary>
         /// 响应脚本编译完成
         /// </summary>
         [DidReloadScripts]
@@ -259,39 +264,9 @@ namespace EmmyLua
             var timeCounter = new Stopwatch();
             timeCounter.Start();
             RecreateAllExportTopFolders();
-            var generateCodeTypeNum = 0;
-            var totalTypeNum = mEmmyLuaGenConfig.GetTotalTypeNum();
-            var genCodeProgress = 0;
-            foreach(var assembleExportData in mEmmyLuaGenConfig.AllAssembleExportDataList)
-            {
-                var assembleName = assembleExportData.ConfigData.CodeData.AssembleName;
-                var assemble = GetAssemblyByName(assembleName);
-                var exportFolderFullPath = GetExportFolderFullPath(assembleExportData.ConfigData.ExportType);
-                if(assemble != null)
-                {
-                    foreach(var namespaceExportData in assembleExportData.AllNamespaceExportDataList)
-                    {
-                        foreach(var classExportData in namespaceExportData.AllClassExportDataList)
-                        {
-                            genCodeProgress++;
-                            var codeData = classExportData.CodeData;
-                            var isExportClass = IsExportClass(codeData.AssembleName, codeData.NamespaceName, codeData.ClassFullName);
-                            if(!isExportClass)
-                            {
-                                continue;
-                            }
-                            // 对应Class的EmmyLua注释生成目录结构:
-                            // 导出类型对应目录路径/命名空间名/Class名_Wrap.lua
-                            var classType = assemble.GetType(codeData.ClassFullName);
-                            var classExportFolderFullPath = Path.Combine(exportFolderFullPath, codeData.NamespaceName);
-                            EmmyLuaGenTool.GenTypeLuaCode(classExportFolderFullPath, classType);
-                            generateCodeTypeNum++;
-                            EditorUtility.DisplayProgressBar("生成EmmyLua代码注释", $"Assemble:{assembleName} Type:{codeData.ClassFullName}", genCodeProgress * 1f / totalTypeNum);
-                        }
-                    }
-                }
-            }
-            Debug.Log($"总共生成类型数量:{generateCodeTypeNum}");
+            // 因为扩展方法没法通过Type.GetMethod()获取，所以执行代码生成前我们需要先分析出所有类型的扩展方法信息
+            DoAnalyseExteionMethodInfos();
+            DoExportAllEmmyLua();
             timeCounter.Stop();
             Debug.Log($"EmmyLua代码生成总耗时:{timeCounter.ElapsedMilliseconds}ms");
             EditorUtility.ClearProgressBar();
@@ -313,6 +288,98 @@ namespace EmmyLua
             FolderUtilities.RecreateSpecificFolder(dotnetExportFolderFullPath);
             FolderUtilities.RecreateSpecificFolder(fguiExportFolderFullPath);
             FolderUtilities.RecreateSpecificFolder(thirdPartyExportFolderFullPath);
+        }
+
+        /// <summary>
+        /// 执行扩展方法信息分析
+        /// </summary>
+        private void DoAnalyseExteionMethodInfos()
+        {
+            mAllTypeExtensionMethodInfosMap.Clear();
+            var totalTypeNum = mEmmyLuaGenConfig.GetTotalTypeNum();
+            var extensionMethodAnalyseProgress = 0;
+            foreach(var assembleExportData in mEmmyLuaGenConfig.AllAssembleExportDataList)
+            {
+                var assembleName = assembleExportData.ConfigData.CodeData.AssembleName;
+                var assemble = GetAssemblyByName(assembleName);
+                var exportFolderFullPath = GetExportFolderFullPath(assembleExportData.ConfigData.ExportType);
+                if (assemble != null)
+                {
+                    foreach (var namespaceExportData in assembleExportData.AllNamespaceExportDataList)
+                    {
+                        foreach (var classExportData in namespaceExportData.AllClassExportDataList)
+                        {
+                            extensionMethodAnalyseProgress++;
+                            var codeData = classExportData.CodeData;
+                            var isExportClass = IsExportClass(codeData.AssembleName, codeData.NamespaceName, codeData.ClassFullName);
+                            if (!isExportClass)
+                            {
+                                continue;
+                            }
+                            // 对应Class的EmmyLua注释生成目录结构:
+                            // 导出类型对应目录路径/命名空间名/Class名_Wrap.lua
+                            var classType = assemble.GetType(codeData.ClassFullName);
+                            var classMethodInfos = classType.GetMethods(EmmyLuaGenTool.PublicStaticBindFlags);
+                            foreach(var methodInfo in classMethodInfos)
+                            {
+                                Type extensionType;
+                                var isExtensionMethod = EmmyLuaGenTool.IsExtensionMethod(methodInfo, out extensionType);
+                                if(isExtensionMethod)
+                                {
+                                    List<MethodInfo> methodInfos;
+                                    if(!mAllTypeExtensionMethodInfosMap.TryGetValue(extensionType, out methodInfos))
+                                    {
+                                        methodInfos = new List<MethodInfo>();
+                                        mAllTypeExtensionMethodInfosMap.Add(extensionType, methodInfos);
+                                    }
+                                    methodInfos.Add(methodInfo);
+                                }
+                            }
+                            EditorUtility.DisplayProgressBar("分析扩展方法", $"Assemble:{assembleName} Type:{codeData.ClassFullName}", extensionMethodAnalyseProgress * 1f / totalTypeNum);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 执行所有EmmyLua导出
+        /// </summary>
+        private void DoExportAllEmmyLua()
+        {
+            var generateCodeTypeNum = 0;
+            var totalTypeNum = mEmmyLuaGenConfig.GetTotalTypeNum();
+            var genCodeProgress = 0;
+            foreach (var assembleExportData in mEmmyLuaGenConfig.AllAssembleExportDataList)
+            {
+                var assembleName = assembleExportData.ConfigData.CodeData.AssembleName;
+                var assemble = GetAssemblyByName(assembleName);
+                var exportFolderFullPath = GetExportFolderFullPath(assembleExportData.ConfigData.ExportType);
+                if (assemble != null)
+                {
+                    foreach (var namespaceExportData in assembleExportData.AllNamespaceExportDataList)
+                    {
+                        foreach (var classExportData in namespaceExportData.AllClassExportDataList)
+                        {
+                            genCodeProgress++;
+                            var codeData = classExportData.CodeData;
+                            var isExportClass = IsExportClass(codeData.AssembleName, codeData.NamespaceName, codeData.ClassFullName);
+                            if (!isExportClass)
+                            {
+                                continue;
+                            }
+                            // 对应Class的EmmyLua注释生成目录结构:
+                            // 导出类型对应目录路径/命名空间名/Class名_Wrap.lua
+                            var classType = assemble.GetType(codeData.ClassFullName);
+                            var classExportFolderFullPath = Path.Combine(exportFolderFullPath, codeData.NamespaceName);
+                            EmmyLuaGenTool.GenTypeLuaCode(classExportFolderFullPath, classType, mAllTypeExtensionMethodInfosMap);
+                            generateCodeTypeNum++;
+                            EditorUtility.DisplayProgressBar("生成EmmyLua代码注释", $"Assemble:{assembleName} Type:{codeData.ClassFullName}", genCodeProgress * 1f / totalTypeNum);
+                        }
+                    }
+                }
+            }
+            Debug.Log($"总共生成类型数量:{generateCodeTypeNum}");
         }
 
         /// <summary>

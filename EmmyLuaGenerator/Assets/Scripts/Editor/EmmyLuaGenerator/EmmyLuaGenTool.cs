@@ -22,12 +22,17 @@ namespace EmmyLua
     public static class EmmyLuaGenTool
     {
         /// <summary>
-        /// 委托类型
+        /// ExtensionAttribute类型信息
+        /// </summary>
+        private static Type ExtensionAttributeType = typeof(ExtensionAttribute);
+
+        /// <summary>
+        /// 委托类型信息
         /// </summary>
         private static Type DelegateType = typeof(Delegate);
 
         /// <summary>
-        /// 编译类型属性类型
+        /// 编译类型属性类型信息
         /// </summary>
         private static Type CompilerGeneratedAttributeType = typeof(CompilerGeneratedAttribute);
 
@@ -79,12 +84,12 @@ namespace EmmyLua
         /// <summary>
         /// 公共反射Flags
         /// </summary>
-        private static BindingFlags PublicInstanceBindFlags = BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public;
+        public static BindingFlags PublicInstanceBindFlags = BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public;
 
         /// <summary>
         /// 公共静态反射Flasgs
         /// </summary>
-        private static BindingFlags PublicStaticBindFlags = BindingFlags.Static | BindingFlags.DeclaredOnly | BindingFlags.Public;
+        public static BindingFlags PublicStaticBindFlags = BindingFlags.Static | BindingFlags.DeclaredOnly | BindingFlags.Public;
 
         /// <summary>
         /// 是否是有效的代码生成类型
@@ -335,6 +340,27 @@ namespace EmmyLua
         }
 
         /// <summary>
+        /// 是否是扩展方法
+        /// </summary>
+        /// <param name="methodInfo"></param>
+        /// <param name="extensionMethodType"></param>
+        /// <returns></returns>
+        public static bool IsExtensionMethod(MethodInfo methodInfo, out Type extensionMethodType)
+        {
+            extensionMethodType = null;
+            if(methodInfo == null)
+            {
+                return false;
+            }
+            if(!methodInfo.IsDefined(ExtensionAttributeType))
+            {
+                return false;
+            }
+            extensionMethodType = methodInfo.GetParameters()[0].ParameterType;
+            return true;
+        }
+
+        /// <summary>
         /// 获取指定类型的Namespace名
         /// </summary>
         /// <param name="type"></param>
@@ -355,8 +381,9 @@ namespace EmmyLua
         /// </summary>
         /// <param name="outputFolderPath"></param>
         /// <param name="type"></param>
+        /// <param name="typeExtensionMethodInfosMap"></param>
         /// <returns></returns>
-        public static bool GenTypeLuaCode(string outputFolderPath, Type type)
+        public static bool GenTypeLuaCode(string outputFolderPath, Type type, Dictionary<Type, List<MethodInfo>> typeExtensionMethodInfosMap)
         {
             if (!IsValideGenCodeType(type))
             {
@@ -367,7 +394,7 @@ namespace EmmyLua
             FolderUtilities.CheckAndCreateSpecificFolder(outputFolderPath);
             var emmyLuaFileName = GetTypeEmmyLuaFileName(type);
             var emmyLuaFileFullPath = Path.Combine(outputFolderPath, emmyLuaFileName);
-            var emmyLuaContent = GetTypeEmmyLuaContent(type);
+            var emmyLuaContent = GetTypeEmmyLuaContent(type, typeExtensionMethodInfosMap);
             using (StreamWriter sw = new StreamWriter(emmyLuaFileFullPath, false, Encoding.Unicode))
             {
                 sw.Write(emmyLuaContent);
@@ -396,8 +423,9 @@ namespace EmmyLua
         /// 获取指定类型的EmmyLua导出内容
         /// </summary>
         /// <param name="type"></param>
+        /// <param name="typeExtensionMethodInfosMap"></param>
         /// <returns></returns>
-        private static string GetTypeEmmyLuaContent(Type type)
+        private static string GetTypeEmmyLuaContent(Type type, Dictionary<Type, List<MethodInfo>> typeExtensionMethodInfosMap)
         {
             if(type == null)
             {
@@ -407,7 +435,7 @@ namespace EmmyLua
             var typeName = type.Name;
             var emmyLuaTypeDefinition = GetEmmyLuaTypeDeclareDefinition(type, true);
             EmmyLuaContentStringBuilder.Append(emmyLuaTypeDefinition);
-            var emmyLuaMethodDefinition = GetEmmyLuaTypeMethodDefinition(type);
+            var emmyLuaMethodDefinition = GetEmmyLuaTypeMethodDefinition(type, typeExtensionMethodInfosMap);
             EmmyLuaContentStringBuilder.Append(emmyLuaMethodDefinition);
             EmmyLuaContentStringBuilder.Append($"return {typeName}");
             return EmmyLuaContentStringBuilder.ToString();
@@ -619,7 +647,7 @@ namespace EmmyLua
             {
                 if(IsValideGenCodeFieldInfo(publicFieldInfo))
                 {
-                    Debug.Log($"publicFieldInfo.Name:{publicFieldInfo.Name}");
+                    //Debug.Log($"publicFieldInfo.Name:{publicFieldInfo.Name}");
                     var fieldName = publicFieldInfo.Name;
                     var fieldType = publicFieldInfo.FieldType;
                     var fieldTypeName = GetEmmyLuaTypeName(fieldType);
@@ -631,7 +659,7 @@ namespace EmmyLua
             {
                 if (IsValideGenCodeFieldInfo(publicStaticFieldInfo))
                 {
-                    Debug.Log($"publicStaticFieldInfo.Name:{publicStaticFieldInfo.Name}");
+                    //Debug.Log($"publicStaticFieldInfo.Name:{publicStaticFieldInfo.Name}");
                     var fieldName = publicStaticFieldInfo.Name;
                     var fieldType = publicStaticFieldInfo.FieldType;
                     var fieldTypeName = GetEmmyLuaTypeName(fieldType);
@@ -644,7 +672,7 @@ namespace EmmyLua
             {
                 if (IsValideGenCodePropertyInfo(publicPropertyInfo))
                 {
-                    Debug.Log($"publicPropertyInfo.Name:{publicPropertyInfo.Name}");
+                    //Debug.Log($"publicPropertyInfo.Name:{publicPropertyInfo.Name}");
                     var propertyName = publicPropertyInfo.Name;
                     var propertyType = publicPropertyInfo.PropertyType;
                     var propertyTypeName = GetEmmyLuaTypeName(propertyType);
@@ -656,7 +684,7 @@ namespace EmmyLua
             {
                 if (IsValideGenCodePropertyInfo(publicStaticPropertyInfo))
                 {
-                    Debug.Log($"publicStaticPropertyInfo.Name:{publicStaticPropertyInfo.Name}");
+                    //Debug.Log($"publicStaticPropertyInfo.Name:{publicStaticPropertyInfo.Name}");
                     var propertyName = publicStaticPropertyInfo.Name;
                     var propertyType = publicStaticPropertyInfo.PropertyType;
                     var propertyTypeName = GetEmmyLuaTypeName(propertyType);
@@ -669,7 +697,7 @@ namespace EmmyLua
             {
                 if (IsValideGenCodeEventInfo(publicEventInfo))
                 {
-                    Debug.Log($"publicEventInfo.Name:{publicEventInfo.Name}");
+                    //Debug.Log($"publicEventInfo.Name:{publicEventInfo.Name}");
                     var eventName = publicEventInfo.Name;
                     var eventType = publicEventInfo.EventHandlerType;
                     var eventTypeName = GetEmmyLuaTypeName(eventType);
@@ -681,7 +709,7 @@ namespace EmmyLua
             {
                 if (IsValideGenCodeEventInfo(publicStaticEventInfo))
                 {
-                    Debug.Log($"publicStaticEventInfo.Name:{publicStaticEventInfo.Name}");
+                    //Debug.Log($"publicStaticEventInfo.Name:{publicStaticEventInfo.Name}");
                     var eventName = publicStaticEventInfo.Name;
                     var eventType = publicStaticEventInfo.EventHandlerType;
                     var eventTypeName = GetEmmyLuaTypeName(eventType);
@@ -695,8 +723,9 @@ namespace EmmyLua
         /// 获取指定类型的EmmyLua方法定义(e.g. function *:**() end or function *.***() end)
         /// </summary>
         /// <param name="type"></param>
+        /// <param name="typeExtensionMethodInfosMap"></param>
         /// <returns></returns>
-        private static string GetEmmyLuaTypeMethodDefinition(Type type)
+        private static string GetEmmyLuaTypeMethodDefinition(Type type, Dictionary<Type, List<MethodInfo>> typeExtensionMethodInfosMap)
         {
             if(type == null)
             {
@@ -708,18 +737,36 @@ namespace EmmyLua
             {
                 if(IsValideGenCodeMethodInfo(publicMethodInfo))
                 {
-                    Debug.Log($"publicMethodInfo.Name:{publicMethodInfo.Name}");
-                    var emmyLuaMethodDefinition = GetEmmyLuaMethodDefinition(publicMethodInfo);
+                    //Debug.Log($"publicMethodInfo.Name:{publicMethodInfo.Name}");
+                    var emmyLuaMethodDefinition = GetEmmyLuaMethodDefinition(publicMethodInfo, type);
                     result = AppendNewLineContent(result, emmyLuaMethodDefinition);
                 }
             }
+
+            // 扩展方法输出
+            List<MethodInfo> allExtensionMethodInfos;
+            if(typeExtensionMethodInfosMap != null && typeExtensionMethodInfosMap.TryGetValue(type, out allExtensionMethodInfos))
+            {
+                foreach(var extensionMethodInfo in allExtensionMethodInfos)
+                {
+                    if(IsValideGenCodeMethodInfo(extensionMethodInfo))
+                    {
+                        //Debug.Log($"extensionMethodInfo.Name:{extensionMethodInfo.Name}");
+                        var emmyLuaMethodDefinition = GetEmmyLuaMethodDefinition(extensionMethodInfo, type);
+                        result = AppendNewLineContent(result, emmyLuaMethodDefinition);
+                    }
+                }
+            }
+
             var allPublicStaticMethodInfos = type.GetMethods(PublicStaticBindFlags);
+            Type extensionType;
             foreach (var publicStaticMethodInfo in allPublicStaticMethodInfos)
             {
-                if (IsValideGenCodeMethodInfo(publicStaticMethodInfo))
+                // 静态方法过滤扩展方法，扩展方法生成到对应类里
+                if (IsValideGenCodeMethodInfo(publicStaticMethodInfo) && !IsExtensionMethod(publicStaticMethodInfo, out extensionType))
                 {
-                    Debug.Log($"publicStaticMethodInfo.Name:{publicStaticMethodInfo.Name}");
-                    var emmyLuaMethodDefinition = GetEmmyLuaMethodDefinition(publicStaticMethodInfo);
+                    //Debug.Log($"publicStaticMethodInfo.Name:{publicStaticMethodInfo.Name}");
+                    var emmyLuaMethodDefinition = GetEmmyLuaMethodDefinition(publicStaticMethodInfo, type);
                     result = AppendNewLineContent(result, emmyLuaMethodDefinition);
                 }
             }
@@ -730,24 +777,29 @@ namespace EmmyLua
         /// 获取指定方法的EmmyLua代码注释定义
         /// </summary>
         /// <param name="methodInfo"></param>
+        /// <param name="ownedType"></param>
         /// <returns></returns>
-        private static string GetEmmyLuaMethodDefinition(MethodInfo methodInfo)
+        private static string GetEmmyLuaMethodDefinition(MethodInfo methodInfo, Type ownedType)
         {
             if(methodInfo == null)
             {
                 return string.Empty;
             }
             var result = string.Empty;
-            var typeName = methodInfo.DeclaringType.Name;
+            var typeName = ownedType.Name;
             var methodParameterInfos = methodInfo.GetParameters();
             var parameterContent = string.Empty;
-            for(int i = 0, length = methodParameterInfos.Length; i < length; i++)
+            Type extensionMethodType;
+            var isExtensionMethod = IsExtensionMethod(methodInfo, out extensionMethodType);
+            // 扩展方法不生成第一个参数
+            var paramStartIndex = isExtensionMethod ? 1 : 0;
+            for(int i = paramStartIndex, length = methodParameterInfos.Length; i < length; i++)
             {
                 var methodParameterInfo = methodParameterInfos[i];
                 var methodParameterName = methodParameterInfo.Name;
                 var methodParameterTypeName = GetEmmyLuaTypeName(methodParameterInfo.ParameterType);
                 result = AppendNewLineContent(result, $"---@param {methodParameterName} {methodParameterTypeName} @");
-                if(i != 0)
+                if(i != paramStartIndex)
                 {
                     parameterContent = $"{parameterContent}, {methodParameterName}";
                 }
