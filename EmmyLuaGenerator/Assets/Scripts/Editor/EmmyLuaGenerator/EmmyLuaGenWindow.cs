@@ -498,35 +498,50 @@ namespace EmmyLua
                 assembleExportData.Init();
             }
             var assemble = GetAssemblyByName(assembleName);
-            var allTypes = assemble.GetTypes();
-            foreach(var type in allTypes)
+            if(assemble == null)
             {
-                if(!EmmyLuaGenTool.IsValideGenCodeType(type))
+                return;
+            }
+            try
+            {
+                var allTypes = assemble.GetTypes();
+                if(allTypes == null)
                 {
-                    continue;
+                    return;
                 }
-                var typeFullName = type.FullName;
-                if(string.IsNullOrEmpty(typeFullName))
+                foreach (var type in allTypes)
                 {
-                    continue;
+                    if (!EmmyLuaGenTool.IsValideGenCodeType(type))
+                    {
+                        continue;
+                    }
+                    var typeFullName = type.FullName;
+                    if (string.IsNullOrEmpty(typeFullName))
+                    {
+                        continue;
+                    }
+                    var namespaceName = EmmyLuaGenTool.GetTypeNamespace(type);
+                    var namespaceExportData = GetNamespaceExportData(assembleName, namespaceName);
+                    if (namespaceExportData == null)
+                    {
+                        namespaceExportData = new NamespaceExportData(new CodeConfigData(assembleName, namespaceName));
+                        AddNamespaceExportData(namespaceExportData);
+                    }
+                    var classExportData = GetClassExportData(assembleName, namespaceName, typeFullName);
+                    if (classExportData == null)
+                    {
+                        classExportData = new CodeConfigData(assembleName, namespaceName, typeFullName);
+                        AddClassExportData(classExportData);
+                    }
                 }
-                var namespaceName = EmmyLuaGenTool.GetTypeNamespace(type);
-                var namespaceExportData = GetNamespaceExportData(assembleName, namespaceName);
-                if(namespaceExportData == null)
+                if (updateAnalyseNum)
                 {
-                    namespaceExportData = new NamespaceExportData(new CodeConfigData(assembleName, namespaceName));
-                    AddNamespaceExportData(namespaceExportData);
-                }
-                var classExportData = GetClassExportData(assembleName, namespaceName, typeFullName);
-                if(classExportData == null)
-                {
-                    classExportData = new CodeConfigData(assembleName, namespaceName, typeFullName);
-                    AddClassExportData(classExportData);
+                    UpdateCodeNumberDatas();
                 }
             }
-            if(updateAnalyseNum)
+            catch(SystemException e)
             {
-                UpdateCodeNumberDatas();
+                Debug.LogError($"Assemble:{assemble.FullName}获取所有类型信息报异常:{e.Message}！");
             }
         }
 
